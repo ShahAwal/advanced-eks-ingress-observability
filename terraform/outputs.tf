@@ -54,11 +54,6 @@ output "node_security_group_id" {
   value       = module.eks.node_security_group_id
 }
 
-output "prometheus_ingest_role_arn" {
-  description = "IAM role ARN for Prometheus to ingest metrics to AMP"
-  value       = aws_iam_role.prometheus_ingest.arn
-}
-
 output "region" {
   description = "AWS region"
   value       = var.region

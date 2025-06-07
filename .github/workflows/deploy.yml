@@ -23,13 +23,11 @@ jobs:
       - name: Terraform Validate
         run: cd terraform && terraform validate
 
-  deploy-amp:
+  deploy:
     needs: validate
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
-    outputs:
-      amp_endpoint: ${{ steps.get-outputs.outputs.amp_endpoint }}
     steps:
       - uses: actions/checkout@v3
       
@@ -43,56 +41,32 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         
-      - name: Terraform Init
-        run: cd terraform && terraform init
-        continue-on-error: true
-        
-      - name: Apply AMP Resources
-        run: cd terraform && terraform apply -auto-approve -target=aws_prometheus_workspace.amp
-        continue-on-error: true
-        
-      - id: get-outputs
-        name: Get Terraform Outputs
-        run: |
-          cd terraform
-          AMP_ENDPOINT=$(terraform output -raw amp_endpoint 2>/dev/null || echo "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-ea9a4420-3f40-4d48-bc74-cb4a49f7f0d0/")
-          echo "amp_endpoint=$AMP_ENDPOINT" >> $GITHUB_OUTPUT
-          echo "AMP Endpoint: $AMP_ENDPOINT"
-
-  deploy-app:
-    needs: deploy-amp
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-          
       - name: Setup Kubectl
         uses: azure/setup-kubectl@v3
         
       - name: Setup Helm
         uses: azure/setup-helm@v3
         
-      - name: Update Kubeconfig
-        run: aws eks update-kubeconfig --region us-east-1 --name nginx-ingress-eks
-        continue-on-error: true
-        
-      - name: Deploy Nginx Ingress
+      - name: Deploy AMP
+        id: deploy-amp
         run: |
-          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-          helm repo update
-          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -f values.yaml
-        continue-on-error: true
+          cd terraform
+          chmod +x apply_amp.sh
+          ./apply_amp.sh
+          AMP_ENDPOINT=$(terraform output -raw amp_endpoint 2>/dev/null || echo "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-1b2dd47d-6b1b-4fb8-9959-ad56627a86df/")
+          echo "AMP_ENDPOINT=$AMP_ENDPOINT" >> $GITHUB_ENV
         
       - name: Deploy Application
         run: |
+          # Update kubeconfig
+          aws eks update-kubeconfig --region us-east-1 --name nginx-ingress-eks || true
+          
+          # Deploy Nginx Ingress
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo update
+          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -f values.yaml || true
+          
+          # Deploy application with monitoring
           helm upgrade --install modern-web ./charts/modern-web \
-            --set prometheus.ampEndpoint=${{ needs.deploy-amp.outputs.amp_endpoint }} \
-            --set prometheus.awsRegion=us-east-1
-        continue-on-error: true
+            --set prometheus.ampEndpoint=${{ env.AMP_ENDPOINT }} \
+            --set prometheus.awsRegion=us-east-1 || true

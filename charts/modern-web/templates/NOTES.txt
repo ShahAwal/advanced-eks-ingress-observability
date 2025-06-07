@@ -1,0 +1,39 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your application has been deployed successfully!
+
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+You can access your application at:
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else }}
+To access your application, run the following commands:
+
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "modern-web.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+
+Then access your application at http://localhost:8080
+{{- end }}
+
+{{- if .Values.prometheus.enabled }}
+Prometheus has been configured to scrape metrics from Nginx Ingress Controller and send them to Amazon Managed Prometheus.
+
+AMP Endpoint: {{ .Values.prometheus.ampEndpoint }}
+{{- end }}
+
+{{- if .Values.grafana.enabled }}
+Grafana dashboards have been deployed and are ready to be imported into your Amazon Managed Grafana workspace.
+
+To configure Grafana with AMP as a data source:
+1. Log in to your Amazon Managed Grafana workspace
+2. Go to Configuration > Data Sources > Add data source
+3. Select 'Prometheus'
+4. Set the URL to: {{ .Values.prometheus.ampEndpoint }}
+5. Enable 'AWS SDK Default' authentication
+6. Save and test the data source
+7. Import the Nginx Ingress dashboard
+{{- end }}

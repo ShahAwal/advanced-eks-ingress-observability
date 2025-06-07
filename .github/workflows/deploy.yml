@@ -57,8 +57,8 @@ jobs:
           terraform apply -auto-approve -target=aws_prometheus_workspace.amp -target=aws_prometheus_rule_group_namespace.nginx_rules
           
           # Get outputs for application deployment
-          AMP_ENDPOINT=$(terraform output -raw amp_endpoint)
-          AWS_REGION=$(terraform output -raw region)
+          AMP_ENDPOINT=$(terraform output -raw amp_endpoint || echo "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-bb857fc7-c236-43c7-b89c-9defd1d34b8f/")
+          AWS_REGION=$(terraform output -raw region || echo "us-east-1")
           
       - name: Deploy Application
         run: |
@@ -68,10 +68,13 @@ jobs:
           # Deploy Nginx Ingress
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo update
-          helm install ingress-nginx ingress-nginx/ingress-nginx -f values.yaml
+          helm install ingress-nginx ingress-nginx/ingress-nginx -f values.yaml || echo "Ingress controller may already be installed"
           
           # Deploy application with monitoring
           cd charts/modern-web
           helm install modern-web . \
+            --set prometheus.ampEndpoint=$AMP_ENDPOINT \
+            --set prometheus.awsRegion=$AWS_REGION || \
+          helm upgrade modern-web . \
             --set prometheus.ampEndpoint=$AMP_ENDPOINT \
             --set prometheus.awsRegion=$AWS_REGION

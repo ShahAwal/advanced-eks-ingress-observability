@@ -214,7 +214,7 @@ module "eks" {
   }
 
   # AWS auth configuration for additional IAM roles/users
-  manage_aws_auth_configmap = true
+  manage_aws_auth_configmap = false
   aws_auth_roles = [
     {
       rolearn  = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/Admin"

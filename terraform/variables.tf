@@ -97,7 +97,7 @@ variable "cluster_enabled_log_types" {
 variable "system_node_group_config" {
   description = "Configuration for the system node group"
   type        = any
-  default = {
+  default     = {
     name           = "system-node-group"
     min_size       = 2
     max_size       = 3
@@ -121,7 +121,7 @@ variable "system_node_group_config" {
 variable "application_node_group_config" {
   description = "Configuration for the application node group"
   type        = any
-  default = {
+  default     = {
     name           = "app-node-group"
     min_size       = 2
     max_size       = 10
@@ -139,9 +139,15 @@ variable "application_node_group_config" {
 variable "tags" {
   description = "A map of tags to add to all resources"
   type        = map(string)
-  default = {
+  default     = {
     Environment = "production"
     Terraform   = "true"
     Project     = "nginx-ingress"
   }
+}
+
+variable "create_grafana" {
+  description = "Whether to create Grafana workspace"
+  type        = bool
+  default     = false
 }

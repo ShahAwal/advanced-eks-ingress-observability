@@ -225,3 +225,4 @@ grafana:
   enabled: true
   dashboards:
     enabled: true
+# Updated values file

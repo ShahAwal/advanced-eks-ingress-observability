@@ -47,30 +47,31 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v3
         
-      - name: Terraform Import
+      - name: Deploy Infrastructure
         run: |
           cd terraform
-          # Import existing resources
-          terraform import aws_iam_role.grafana grafana-role
-          terraform import aws_iam_policy.grafana_amp_access arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):policy/GrafanaAMPAccess
-          terraform import aws_iam_policy.prometheus_ingest arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):policy/AMPIngestPolicy
-          # Continue with apply
-          terraform apply -auto-approve
+          # Initialize with state
+          terraform init
+          
+          # Apply only specific resources to avoid conflicts
+          terraform apply -auto-approve -target=aws_prometheus_workspace.amp -target=aws_prometheus_rule_group_namespace.nginx_rules
+          
+          # Get outputs for application deployment
+          AMP_ENDPOINT=$(terraform output -raw amp_endpoint)
+          AWS_REGION=$(terraform output -raw region)
           
       - name: Deploy Application
         run: |
           # Update kubeconfig
           aws eks update-kubeconfig --region us-east-1 --name nginx-ingress-eks
-          # Deploy Nginx Ingress and application
+          
+          # Deploy Nginx Ingress
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo update
           helm install ingress-nginx ingress-nginx/ingress-nginx -f values.yaml
-          # Get AMP endpoint and role ARN
-          AMP_ENDPOINT=$(cd terraform && terraform output -raw amp_endpoint)
-          AMP_INGEST_ROLE_ARN=$(cd terraform && terraform output -raw prometheus_ingest_role_arn)
-          AWS_REGION=$(cd terraform && terraform output -raw region)
-          # Install application with monitoring
-          helm install modern-web ./charts/modern-web \
+          
+          # Deploy application with monitoring
+          cd charts/modern-web
+          helm install modern-web . \
             --set prometheus.ampEndpoint=$AMP_ENDPOINT \
-            --set prometheus.ampIngestRoleArn=$AMP_INGEST_ROLE_ARN \
             --set prometheus.awsRegion=$AWS_REGION

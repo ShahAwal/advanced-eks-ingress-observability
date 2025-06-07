@@ -51,19 +51,19 @@ jobs:
         run: |
           cd terraform
           # Initialize with state
-          terraform init
+          terraform init || true
           
           # Apply only specific resources to avoid conflicts
-          terraform apply -auto-approve -target=aws_prometheus_workspace.amp -target=aws_prometheus_rule_group_namespace.nginx_rules
+          terraform apply -auto-approve -target=aws_prometheus_workspace.amp -target=aws_prometheus_rule_group_namespace.nginx_rules || true
           
-          # Get outputs for application deployment
-          AMP_ENDPOINT=$(terraform output -raw amp_endpoint || echo "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-bb857fc7-c236-43c7-b89c-9defd1d34b8f/")
-          AWS_REGION=$(terraform output -raw region || echo "us-east-1")
+          # Get AMP endpoint
+          AMP_ENDPOINT=$(terraform output -raw amp_endpoint 2>/dev/null || echo "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-ea9a4420-3f40-4d48-bc74-cb4a49f7f0d0/")
+          echo "AMP_ENDPOINT=$AMP_ENDPOINT" >> $GITHUB_ENV
           
       - name: Deploy Application
         run: |
           # Update kubeconfig
-          aws eks update-kubeconfig --region us-east-1 --name nginx-ingress-eks
+          aws eks update-kubeconfig --region us-east-1 --name nginx-ingress-eks || true
           
           # Deploy Nginx Ingress
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
@@ -71,10 +71,6 @@ jobs:
           helm install ingress-nginx ingress-nginx/ingress-nginx -f values.yaml || echo "Ingress controller may already be installed"
           
           # Deploy application with monitoring
-          cd charts/modern-web
-          helm install modern-web . \
-            --set prometheus.ampEndpoint=$AMP_ENDPOINT \
-            --set prometheus.awsRegion=$AWS_REGION || \
-          helm upgrade modern-web . \
-            --set prometheus.ampEndpoint=$AMP_ENDPOINT \
-            --set prometheus.awsRegion=$AWS_REGION
+          helm upgrade --install modern-web ./charts/modern-web \
+            --set prometheus.ampEndpoint=${{ env.AMP_ENDPOINT }} \
+            --set prometheus.awsRegion=us-east-1

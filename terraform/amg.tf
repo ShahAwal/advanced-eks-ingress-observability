@@ -10,6 +10,9 @@ resource "aws_grafana_workspace" "amg" {
 }
 
 resource "aws_iam_role" "grafana" {
+  lifecycle {
+    ignore_changes = [assume_role_policy]
+  }
   name = "grafana-role"
 
   assume_role_policy = jsonencode({
@@ -29,6 +32,9 @@ resource "aws_iam_role" "grafana" {
 }
 
 resource "aws_iam_policy" "grafana_amp_access" {
+  lifecycle {
+    ignore_changes = [policy]
+  }
   name        = "GrafanaAMPAccess"
   description = "Allow Grafana to access AMP"
 

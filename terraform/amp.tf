@@ -104,6 +104,9 @@ resource "aws_iam_policy" "prometheus_ingest" {
   lifecycle {
     ignore_changes = [policy]
   }
+  lifecycle {
+    ignore_changes = [policy]
+  }
   name        = "AMPIngestPolicy"
   description = "Allow ingesting metrics to AMP"
 

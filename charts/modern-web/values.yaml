@@ -203,9 +203,9 @@ networkPolicy:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: prometheus
-        ports:
-          - port: 80
-            protocol: TCP
+      ports:
+        - port: 80
+          protocol: TCP
             
             
 prometheus:

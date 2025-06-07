@@ -10,16 +10,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-        
+
       - name: Terraform Format
         run: cd terraform && terraform fmt
-        
+
       - name: Terraform Init
         run: cd terraform && terraform init -backend=false
-        
+
       - name: Terraform Validate
         run: cd terraform && terraform validate
 
@@ -30,43 +30,49 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-          
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-        
+
       - name: Setup Kubectl
         uses: azure/setup-kubectl@v3
-        
+
       - name: Setup Helm
         uses: azure/setup-helm@v3
-        
+
       - name: Deploy AMP
         run: |
           cd terraform
           terraform init
           terraform apply -auto-approve -target=aws_prometheus_workspace.amp -target=aws_prometheus_rule_group_namespace.nginx_rules || true
-          terraform output -raw amp_endpoint > /tmp/amp_endpoint.txt || echo "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-default/" > /tmp/amp_endpoint.txt
-        
+
+      - name: Set AMP endpoint as output
+        id: amp
+        run: |
+          cd terraform
+          AMP_ENDPOINT=$(terraform output -raw amp_endpoint 2>/dev/null || echo "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-default/")
+          echo "amp_endpoint=$AMP_ENDPOINT" >> $GITHUB_OUTPUT
+
       - name: Deploy Application
         run: |
-          # Get AMP endpoint
-          AMP_ENDPOINT=$(cat /tmp/amp_endpoint.txt)
-          
+          # Get AMP endpoint from previous step
+          AMP_ENDPOINT="${{ steps.amp.outputs.amp_endpoint }}"
+
           # Update kubeconfig
           aws eks update-kubeconfig --region us-east-1 --name nginx-ingress-eks || true
-          
+
           # Deploy Nginx Ingress
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo update
           helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -f values.yaml || true
-          
+
           # Deploy application with monitoring
           helm upgrade --install modern-web ./charts/modern-web \
             --set prometheus.ampEndpoint=$AMP_ENDPOINT \

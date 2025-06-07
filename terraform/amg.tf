@@ -10,12 +10,6 @@ resource "aws_grafana_workspace" "amg" {
 }
 
 resource "aws_iam_role" "grafana" {
-  lifecycle {
-    ignore_changes = [assume_role_policy]
-  }
-  lifecycle {
-    ignore_changes = [assume_role_policy]
-  }
   name = "grafana-role"
 
   assume_role_policy = jsonencode({
@@ -31,16 +25,15 @@ resource "aws_iam_role" "grafana" {
     ]
   })
 
+  # Single lifecycle block
+  lifecycle {
+    ignore_changes = [assume_role_policy]
+  }
+
   tags = var.tags
 }
 
 resource "aws_iam_policy" "grafana_amp_access" {
-  lifecycle {
-    ignore_changes = [policy]
-  }
-  lifecycle {
-    ignore_changes = [policy]
-  }
   name        = "GrafanaAMPAccess"
   description = "Allow Grafana to access AMP"
 
@@ -59,6 +52,11 @@ resource "aws_iam_policy" "grafana_amp_access" {
       }
     ]
   })
+
+  # Single lifecycle block
+  lifecycle {
+    ignore_changes = [policy]
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "grafana_amp_access" {

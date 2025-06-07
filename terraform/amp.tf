@@ -87,26 +87,26 @@ resource "aws_iam_role" "prometheus_ingest" {
         Effect = "Allow"
         Principal = {
           Federated = module.eks.oidc_provider_arn
-        }
+        # }
         Condition = {
           StringEquals = {
             "${module.eks.oidc_provider}:sub" : "system:serviceaccount:monitoring:prometheus-server"
-          }
-        }
-      }
+          # }
+        # }
+      # }
     ]
-  })
+  # })
 
   tags = var.tags
 }
 
 resource "aws_iam_policy" "prometheus_ingest" {
-  lifecycle {
-    ignore_changes = [policy]
-  }
-  lifecycle {
-    ignore_changes = [policy]
-  }
+  # lifecycle block
+  # ignore_changes = [policy]
+  # }
+  # lifecycle block
+  # ignore_changes = [policy]
+  # }
   name        = "AMPIngestPolicy"
   description = "Allow ingesting metrics to AMP"
 
@@ -122,9 +122,9 @@ resource "aws_iam_policy" "prometheus_ingest" {
         ]
         Effect   = "Allow"
         Resource = aws_prometheus_workspace.amp.arn
-      }
+      # }
     ]
-  })
+  # })
 }
 
 resource "aws_iam_role_policy_attachment" "prometheus_ingest" {

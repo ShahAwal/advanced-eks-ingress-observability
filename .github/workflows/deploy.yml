@@ -51,10 +51,10 @@ jobs:
         id: deploy-amp
         run: |
           cd terraform
-          chmod +x apply_amp.sh
-          ./apply_amp.sh
-          AMP_ENDPOINT=$(terraform output -raw amp_endpoint 2>/dev/null || echo "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-1b2dd47d-6b1b-4fb8-9959-ad56627a86df/")
-          echo "AMP_ENDPOINT=$AMP_ENDPOINT" >> $GITHUB_ENV
+          terraform init
+          terraform apply -auto-approve -target=aws_prometheus_workspace.amp -target=aws_prometheus_rule_group_namespace.nginx_rules || true
+          AMP_ENDPOINT=$(terraform output -raw amp_endpoint || echo "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-24e458c1-eb10-41d9-a5b7-ce2027ac7a76/")
+          echo "amp_endpoint=$AMP_ENDPOINT" >> $GITHUB_OUTPUT
         
       - name: Deploy Application
         run: |
@@ -68,5 +68,5 @@ jobs:
           
           # Deploy application with monitoring
           helm upgrade --install modern-web ./charts/modern-web \
-            --set prometheus.ampEndpoint=${{ env.AMP_ENDPOINT }} \
+            --set prometheus.ampEndpoint=${{ steps.deploy-amp.outputs.amp_endpoint }} \
             --set prometheus.awsRegion=us-east-1 || true

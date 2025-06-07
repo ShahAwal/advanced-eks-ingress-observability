@@ -78,7 +78,7 @@ resource "aws_sns_topic" "alerts" {
 
 resource "aws_iam_role" "prometheus_ingest" {
   name = "amp-ingest-role"
-
+  
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -87,29 +87,23 @@ resource "aws_iam_role" "prometheus_ingest" {
         Effect = "Allow"
         Principal = {
           Federated = module.eks.oidc_provider_arn
-        # }
+        }
         Condition = {
           StringEquals = {
-            "${module.eks.oidc_provider}:sub" : "system:serviceaccount:monitoring:prometheus-server"
-          # }
-        # }
-      # }
+            "${module.eks.oidc_provider}:sub": "system:serviceaccount:monitoring:prometheus-server"
+          }
+        }
+      }
     ]
-  # })
-
+  })
+  
   tags = var.tags
 }
 
 resource "aws_iam_policy" "prometheus_ingest" {
-  # lifecycle block
-  # ignore_changes = [policy]
-  # }
-  # lifecycle block
-  # ignore_changes = [policy]
-  # }
   name        = "AMPIngestPolicy"
   description = "Allow ingesting metrics to AMP"
-
+  
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -122,9 +116,13 @@ resource "aws_iam_policy" "prometheus_ingest" {
         ]
         Effect   = "Allow"
         Resource = aws_prometheus_workspace.amp.arn
-      # }
+      }
     ]
-  # })
+  })
+  
+  lifecycle {
+    ignore_changes = [policy]
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "prometheus_ingest" {
@@ -139,4 +137,8 @@ output "amp_endpoint" {
 
 output "amp_workspace_id" {
   value = aws_prometheus_workspace.amp.id
+}
+
+output "prometheus_ingest_role_arn" {
+  value = aws_iam_role.prometheus_ingest.arn
 }

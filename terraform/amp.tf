@@ -78,7 +78,7 @@ resource "aws_sns_topic" "alerts" {
 
 resource "aws_iam_role" "prometheus_ingest" {
   name = "amp-ingest-role"
-  
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -90,20 +90,20 @@ resource "aws_iam_role" "prometheus_ingest" {
         }
         Condition = {
           StringEquals = {
-            "${module.eks.oidc_provider}:sub": "system:serviceaccount:monitoring:prometheus-server"
+            "${module.eks.oidc_provider}:sub" : "system:serviceaccount:monitoring:prometheus-server"
           }
         }
       }
     ]
   })
-  
+
   tags = var.tags
 }
 
 resource "aws_iam_policy" "prometheus_ingest" {
   name        = "AMPIngestPolicy"
   description = "Allow ingesting metrics to AMP"
-  
+
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [

@@ -29,10 +29,10 @@ module "vpc" {
   enable_nat_gateway     = var.enable_nat_gateway
   single_nat_gateway     = var.single_nat_gateway
   one_nat_gateway_per_az = var.one_nat_gateway_per_az
-  
+
   enable_dns_hostnames = true
   enable_dns_support   = true
-  
+
   # VPC Flow Logs
   enable_flow_log                      = var.enable_flow_log
   create_flow_log_cloudwatch_log_group = true
@@ -48,7 +48,7 @@ module "vpc" {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "kubernetes.io/role/internal-elb"           = "1"
   }
-  
+
   tags = var.tags
 }
 
@@ -82,10 +82,10 @@ module "eks" {
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
-  
+
   # Enhanced security settings
-  cluster_endpoint_private_access = var.cluster_endpoint_private_access
-  cluster_endpoint_public_access  = var.cluster_endpoint_public_access
+  cluster_endpoint_private_access      = var.cluster_endpoint_private_access
+  cluster_endpoint_public_access       = var.cluster_endpoint_public_access
   cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
 
   # Enable secrets encryption using KMS
@@ -93,10 +93,10 @@ module "eks" {
     provider_key_arn = aws_kms_key.eks.arn
     resources        = ["secrets"]
   }]
-  
+
   # Enable control plane logging
   cluster_enabled_log_types = var.cluster_enabled_log_types
-  
+
   # Add cluster security group rules
   cluster_security_group_additional_rules = {
     ingress_nodes_ephemeral_ports_tcp = {
@@ -137,16 +137,16 @@ module "eks" {
       max_size       = var.system_node_group_config.max_size
       desired_size   = var.system_node_group_config.desired_size
       instance_types = var.system_node_group_config.instance_types
-      
-      capacity_type  = var.system_node_group_config.capacity_type
-      
+
+      capacity_type = var.system_node_group_config.capacity_type
+
       # Enhanced security and monitoring
       enable_monitoring = true
-      
+
       # Use custom launch template
       create_launch_template = true
       launch_template_name   = "${var.cluster_name}-system-node-group"
-      
+
       # Root volume encryption and sizing
       block_device_mappings = {
         xvda = {
@@ -159,17 +159,17 @@ module "eks" {
           }
         }
       }
-      
+
       # Add labels and taints for system workloads
       k8s_labels = var.system_node_group_config.labels
-      
+
       taints = var.system_node_group_config.taints
-      
+
       update_config = {
         max_unavailable_percentage = 25
       }
     }
-    
+
     # Application node group for general workloads
     application = {
       name           = var.application_node_group_config.name
@@ -177,16 +177,16 @@ module "eks" {
       max_size       = var.application_node_group_config.max_size
       desired_size   = var.application_node_group_config.desired_size
       instance_types = var.application_node_group_config.instance_types
-      
-      capacity_type  = var.application_node_group_config.capacity_type
-      
+
+      capacity_type = var.application_node_group_config.capacity_type
+
       # Enhanced security and monitoring
       enable_monitoring = true
-      
+
       # Use custom launch template
       create_launch_template = true
       launch_template_name   = "${var.cluster_name}-app-node-group"
-      
+
       # Root volume encryption and sizing
       block_device_mappings = {
         xvda = {
@@ -199,18 +199,18 @@ module "eks" {
           }
         }
       }
-      
+
       # Add labels for application workloads
       k8s_labels = var.application_node_group_config.labels
-      
+
       taints = var.application_node_group_config.taints
-      
+
       update_config = {
         max_unavailable_percentage = 25
       }
     }
   }
-  
+
   # AWS auth configuration for additional IAM roles/users
   manage_aws_auth_configmap = true
   aws_auth_roles = [
@@ -220,7 +220,7 @@ module "eks" {
       groups   = ["system:masters"]
     }
   ]
-  
+
   tags = var.tags
 }
 

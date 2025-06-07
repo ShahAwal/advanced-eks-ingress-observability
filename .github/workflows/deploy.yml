@@ -48,16 +48,17 @@ jobs:
         uses: azure/setup-helm@v3
         
       - name: Deploy AMP
-        id: deploy-amp
         run: |
           cd terraform
           terraform init
           terraform apply -auto-approve -target=aws_prometheus_workspace.amp -target=aws_prometheus_rule_group_namespace.nginx_rules || true
-          AMP_ENDPOINT=$(terraform output -raw amp_endpoint || echo "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-24e458c1-eb10-41d9-a5b7-ce2027ac7a76/")
-          echo "amp_endpoint=$AMP_ENDPOINT" >> $GITHUB_OUTPUT
+          terraform output -raw amp_endpoint > /tmp/amp_endpoint.txt || echo "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-default/" > /tmp/amp_endpoint.txt
         
       - name: Deploy Application
         run: |
+          # Get AMP endpoint
+          AMP_ENDPOINT=$(cat /tmp/amp_endpoint.txt)
+          
           # Update kubeconfig
           aws eks update-kubeconfig --region us-east-1 --name nginx-ingress-eks || true
           
@@ -68,5 +69,5 @@ jobs:
           
           # Deploy application with monitoring
           helm upgrade --install modern-web ./charts/modern-web \
-            --set prometheus.ampEndpoint=${{ steps.deploy-amp.outputs.amp_endpoint }} \
+            --set prometheus.ampEndpoint=$AMP_ENDPOINT \
             --set prometheus.awsRegion=us-east-1 || true

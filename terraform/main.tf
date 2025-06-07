@@ -75,7 +75,7 @@ resource "aws_security_group" "eks_cluster" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.0"
+  version = "~> 18.0"
 
   cluster_name    = var.cluster_name
   cluster_version = var.cluster_version
@@ -89,10 +89,12 @@ module "eks" {
   cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
 
   # Enable secrets encryption using KMS
-  cluster_encryption_config = [{
-    provider_key_arn = aws_kms_key.eks.arn
-    resources        = ["secrets"]
-  }]
+  cluster_encryption_config = [
+    {
+      provider_key_arn = aws_kms_key.eks.arn
+      resources        = ["secrets"]
+    }
+  ]
 
   # Enable control plane logging
   cluster_enabled_log_types = var.cluster_enabled_log_types

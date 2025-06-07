@@ -54,21 +54,6 @@ output "node_security_group_id" {
   value       = module.eks.node_security_group_id
 }
 
-output "amp_endpoint" {
-  description = "Amazon Managed Prometheus workspace endpoint"
-  value       = aws_prometheus_workspace.amp.prometheus_endpoint
-}
-
-output "amp_workspace_id" {
-  description = "Amazon Managed Prometheus workspace ID"
-  value       = aws_prometheus_workspace.amp.id
-}
-
-output "grafana_workspace_url" {
-  description = "Amazon Managed Grafana workspace URL"
-  value       = "https://${aws_grafana_workspace.amg.endpoint}"
-}
-
 output "prometheus_ingest_role_arn" {
   description = "IAM role ARN for Prometheus to ingest metrics to AMP"
   value       = aws_iam_role.prometheus_ingest.arn

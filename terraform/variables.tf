@@ -96,7 +96,7 @@ variable "cluster_enabled_log_types" {
 
 variable "system_node_group_config" {
   description = "Configuration for the system node group"
-  type        = map(any)
+  type        = any
   default = {
     name           = "system-node-group"
     min_size       = 2
@@ -120,7 +120,7 @@ variable "system_node_group_config" {
 
 variable "application_node_group_config" {
   description = "Configuration for the application node group"
-  type        = map(any)
+  type        = any
   default = {
     name           = "app-node-group"
     min_size       = 2
